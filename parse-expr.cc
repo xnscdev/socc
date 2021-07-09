@@ -16,43 +16,117 @@
 
 #include <cctype>
 #include <iomanip>
+#include <unordered_map>
 #include "context.hh"
 
 using namespace socc;
 
+static std::unordered_map <TokenType, UnaryOperator> unary_op_map = {
+  {TokenType::Inc, UnaryOperator::IncPrefix},
+  {TokenType::Dec, UnaryOperator::DecPrefix},
+  {TokenType::Plus, UnaryOperator::Plus},
+  {TokenType::Minus, UnaryOperator::Minus},
+  {TokenType::Not, UnaryOperator::Not},
+  {TokenType::LogicalNot, UnaryOperator::LogicalNot},
+  {TokenType::Mul, UnaryOperator::Dereference},
+  {TokenType::And, UnaryOperator::Address}
+};
+
+static std::unordered_map <TokenType, BinaryOperator> binary_op_map = {
+  {TokenType::Mul, BinaryOperator::Mul},
+  {TokenType::Div, BinaryOperator::Div},
+  {TokenType::Mod, BinaryOperator::Mod},
+  {TokenType::Plus, BinaryOperator::Add},
+  {TokenType::Minus, BinaryOperator::Sub},
+  {TokenType::Shl, BinaryOperator::Shl},
+  {TokenType::Shr, BinaryOperator::Shr},
+  {TokenType::Lt, BinaryOperator::Lt},
+  {TokenType::Le, BinaryOperator::Le},
+  {TokenType::Gt, BinaryOperator::Gt},
+  {TokenType::Ge, BinaryOperator::Ge},
+  {TokenType::Eq, BinaryOperator::Eq},
+  {TokenType::Ne, BinaryOperator::Ne},
+  {TokenType::And, BinaryOperator::And},
+  {TokenType::Xor, BinaryOperator::Xor},
+  {TokenType::Or, BinaryOperator::Or},
+  {TokenType::LogicalAnd, BinaryOperator::LogicalAnd},
+  {TokenType::LogicalOr, BinaryOperator::LogicalOr},
+  {TokenType::Assign, BinaryOperator::Assign},
+  {TokenType::AssignPlus, BinaryOperator::AssignAdd},
+  {TokenType::AssignMinus, BinaryOperator::AssignSub},
+  {TokenType::AssignMul, BinaryOperator::AssignMul},
+  {TokenType::AssignDiv, BinaryOperator::AssignDiv},
+  {TokenType::AssignMod, BinaryOperator::AssignMod},
+  {TokenType::AssignShl, BinaryOperator::AssignShl},
+  {TokenType::AssignShr, BinaryOperator::AssignShr},
+  {TokenType::AssignAnd, BinaryOperator::AssignAnd},
+  {TokenType::AssignXor, BinaryOperator::AssignXor},
+  {TokenType::AssignOr, BinaryOperator::AssignOr}
+};
+
+static std::unordered_map <BinaryOperator, unsigned int> binary_prec_map = {
+  {BinaryOperator::Mul, 11},
+  {BinaryOperator::Div, 11},
+  {BinaryOperator::Mod, 11},
+  {BinaryOperator::Add, 10},
+  {BinaryOperator::Sub, 10},
+  {BinaryOperator::Shl, 9},
+  {BinaryOperator::Shr, 9},
+  {BinaryOperator::Lt, 8},
+  {BinaryOperator::Le, 8},
+  {BinaryOperator::Gt, 8},
+  {BinaryOperator::Ge, 8},
+  {BinaryOperator::Eq, 7},
+  {BinaryOperator::Ne, 7},
+  {BinaryOperator::And, 6},
+  {BinaryOperator::Xor, 5},
+  {BinaryOperator::Or, 4},
+  {BinaryOperator::LogicalAnd, 3},
+  {BinaryOperator::LogicalOr, 2},
+  {BinaryOperator::Assign, 1},
+  {BinaryOperator::AssignAdd, 1},
+  {BinaryOperator::AssignSub, 1},
+  {BinaryOperator::AssignMul, 1},
+  {BinaryOperator::AssignDiv, 1},
+  {BinaryOperator::AssignMod, 1},
+  {BinaryOperator::AssignShl, 1},
+  {BinaryOperator::AssignShr, 1},
+  {BinaryOperator::AssignAnd, 1},
+  {BinaryOperator::AssignXor, 1},
+  {BinaryOperator::AssignOr, 1}
+};
+
 bool
-Context::expr_get_unary_op (TokenPtr token, UnaryOperator &op)
+Context::expr_get_unary_op (TokenType type, UnaryOperator &op)
 {
-  switch (token->type)
+  if (unary_op_map.count (type))
     {
-    case TokenType::Inc:
-      op = UnaryOperator::IncPrefix;
-      break;
-    case TokenType::Dec:
-      op = UnaryOperator::DecPrefix;
-      break;
-    case TokenType::Plus:
-      op = UnaryOperator::Plus;
-      break;
-    case TokenType::Minus:
-      op = UnaryOperator::Minus;
-      break;
-    case TokenType::Not:
-      op = UnaryOperator::Not;
-      break;
-    case TokenType::LogicalNot:
-      op = UnaryOperator::LogicalNot;
-      break;
-    case TokenType::Mul:
-      op = UnaryOperator::Dereference;
-      break;
-    case TokenType::And:
-      op = UnaryOperator::Address;
-      break;
-    default:
-      return false;
+      op = unary_op_map[type];
+      return true;
     }
-  return true;
+  else
+    return false;
+}
+
+bool
+Context::expr_get_binary_op (TokenType type, BinaryOperator &op)
+{
+  if (binary_op_map.count (type))
+    {
+      op = binary_op_map[type];
+      return true;
+    }
+  else
+    return false;
+}
+
+unsigned int
+Context::expr_get_binary_prec (BinaryOperator op)
+{
+  if (binary_prec_map.count (op))
+    return binary_prec_map[op];
+  else
+    return 0;
 }
 
 void
@@ -139,7 +213,7 @@ Context::parse_expr_basic (void)
 	return nullptr;
       UnaryOperator op;
       Location loc = token->loc;
-      if (expr_get_unary_op (std::move (token), op))
+      if (expr_get_unary_op (token->type, op))
 	{
 	  ExprPtr operand = parse_expr_basic ();
 	  if (operand == nullptr)
@@ -237,9 +311,52 @@ Context::parse_expr_array_index (ExprPtr expr)
 }
 
 ExprPtr
-Context::parse_expr_binary (ExprPtr lhs, unsigned int prec)
+Context::parse_expr_binary (ExprPtr lhs, unsigned int minprec)
 {
-  return lhs;
+  while (1)
+    {
+      BinaryOperator op;
+      TokenPtr token = next_token ();
+      if (token == nullptr)
+	return lhs;
+      if (!expr_get_binary_op (token->type, op))
+	{
+	  error (token->loc, "operator is invalid in this context");
+	  return lhs;
+	}
+
+      unsigned int prec = expr_get_binary_prec (op);
+      if (prec < minprec)
+	{
+	  token_stack.push (std::move (token));
+	  return lhs;
+	}
+
+      ExprPtr rhs = parse_expr_basic ();
+      if (rhs == nullptr)
+	{
+	  error (currloc, "unexpected end of input, expected an expression");
+	  return lhs;
+	}
+      token = next_token ();
+      if (token == nullptr || !binary_op_map.count (token->type))
+	{
+	  lhs = std::make_unique <BinaryAST> (lhs->location (), op,
+					      std::move (lhs), std::move (rhs));
+	  token_stack.push (std::move (token));
+	  continue;
+	}
+
+      /* Peek ahead at next token to see if it has higher precedence */
+      BinaryOperator new_op;
+      expr_get_binary_op (token->type, new_op);
+      unsigned int nextprec = expr_get_binary_prec (new_op);
+      token_stack.push (std::move (token));
+      if (prec < nextprec)
+	rhs = parse_expr_binary (std::move (rhs), prec + 1);
+      lhs = std::make_unique <BinaryAST> (lhs->location (), op,
+					  std::move (lhs), std::move (rhs));
+    }
 }
 
 ExprPtr
