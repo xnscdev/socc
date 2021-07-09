@@ -17,6 +17,8 @@
 #ifndef _TYPE_HH
 #define _TYPE_HH
 
+#include <vector>
+#include <map>
 #include <memory>
 #include "location.hh"
 
@@ -25,7 +27,10 @@ namespace socc
   enum class TypeType
   {
     Primitive,
-    Pointer
+    Pointer,
+    Array,
+    Function,
+    Struct
   };
 
   enum class PrimitiveType
@@ -65,23 +70,42 @@ namespace socc
   class Type
   {
     size_t primitive_width (void);
+    size_t struct_width (void);
+    std::string primitive_name (void);
+    std::string pointer_name (void);
+    std::string function_name (void);
 
   public:
     TypeType type;
-    Location loc;
     StorageClass storage;
     TypeContext ctx;
     bool is_const;
     bool is_volatile;
     PrimitiveType primitive;
-    TypePtr pointer;
+    TypePtr pointer; /* For pointer, array, and function return types */
+    unsigned long len; /* For array size */
+    std::vector <TypePtr> params; /* For function params and anonymous struct 
+				     members */
+    std::string struct_name;
 
-    Type (Location loc, PrimitiveType type) :
-      type (TypeType::Primitive), loc (loc), primitive (type) {}
-    Type (Location loc, TypePtr type) :
-      type (TypeType::Pointer), loc (loc), pointer (std::move (type)) {}
+    Type (PrimitiveType type) : type (TypeType::Primitive), primitive (type) {}
+    Type (TypePtr type) :
+      type (TypeType::Pointer), pointer (std::move (type)) {}
+    Type (TypePtr type, unsigned long len) :
+      type (TypeType::Array), pointer (std::move (type)), len (len) {}
+    Type (TypePtr rettype, std::vector <TypePtr> params) :
+      type (TypeType::Function), pointer (std::move (rettype)),
+      params (std::move (params)) {}
+    Type (std::vector <TypePtr> params) :
+      type (TypeType::Struct), params (std::move (params)) {}
+    Type (std::string struct_name) :
+      type (TypeType::Struct), struct_name (struct_name) {}
     size_t width (void);
+    std::string name (void);
   };
+
+  extern std::map <std::string, std::vector <TypePtr>> struct_types;
+  extern std::map <std::string, TypePtr> typedefs;
 }
 
 #endif
