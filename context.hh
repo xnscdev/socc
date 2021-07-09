@@ -19,7 +19,7 @@
 
 #include <istream>
 #include <stack>
-#include "token.hh"
+#include "ast.hh"
 
 namespace socc
 {
@@ -35,6 +35,14 @@ namespace socc
     TokenPtr scan_number (char c);
     TokenPtr scan_char (void);
     TokenPtr scan_string (void);
+    bool expr_get_unary_op (TokenPtr token, UnaryOperator &op);
+    void expr_call_build_params (std::vector <ExprPtr> &params);
+    ExprPtr parse_expr_atomic (void);
+    ExprPtr parse_expr_basic (void);
+    ExprPtr parse_expr_suffix (ExprPtr expr);
+    ExprPtr parse_expr_member_access (ExprPtr expr, bool deref);
+    ExprPtr parse_expr_array_index (ExprPtr expr);
+    ExprPtr parse_expr_binary (ExprPtr lhs, unsigned int prec);
 
   public:
     Location currloc;
@@ -46,10 +54,12 @@ namespace socc
     void warning (Location loc, std::string msg, std::string option = "");
     void error (Location loc, std::string msg);
     TokenPtr next_token (void);
+    ExprPtr next_expr (void);
   };
 
   void init_console (void);
   void fatal_error (std::string msg, std::string option = "");
+  void print_escaped_string (std::ostream &os, std::string str);
 }
 
 #endif

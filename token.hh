@@ -18,7 +18,6 @@
 #define _TOKEN_HH
 
 #include <memory>
-#include <string>
 #include "location.hh"
 
 namespace socc
@@ -134,12 +133,9 @@ namespace socc
     Token (TokenType type, Location loc, unsigned long long num,
 	   IntLiteralWidth num_width) :
       type (type), loc (loc), num (num), num_width (num_width) {}
-    void write_escaped_string (std::ostream &os) const;
   };
 
   typedef std::unique_ptr <Token> TokenPtr;
 }
-
-std::ostream &operator<< (std::ostream &os, const socc::Token &token);
 
 #endif

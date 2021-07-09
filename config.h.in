@@ -1,4 +1,4 @@
-/* main.cc -- This file is part of SOCC.
+/* config.h -- This file is part of SOCC.
    Copyright (C) 2021 XNSC
 
    SOCC is free software: you can redistribute it and/or modify
@@ -14,20 +14,11 @@
    You should have received a copy of the GNU General Public License
    along with SOCC. If not, see <https://www.gnu.org/licenses/>. */
 
-#include <iostream>
-#include "context.hh"
+#ifndef _CONFIG_H
+#define _CONFIG_H
 
-int
-main (int argc, char **argv)
-{
-  socc::init_console ();
-  socc::Context ctx ("<stdin>", std::cin);
-  while (1)
-    {
-      socc::ExprPtr expr = ctx.next_expr ();
-      if (expr == nullptr)
-	break;
-      std::cout << expr->location () << ": " << *expr << std::endl;
-    }
-  return 0;
-}
+#mesondefine VERSION
+
+#mesondefine LP_WIDTH
+
+#endif
