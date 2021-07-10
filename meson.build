@@ -24,6 +24,7 @@ socc_src = [
   'lex.cc',
   'main.cc',
   'parse-expr.cc',
+  'parse-statement.cc',
   'type.cc'
 ]
 

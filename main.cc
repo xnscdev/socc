@@ -24,10 +24,10 @@ main (int argc, char **argv)
   socc::Context ctx ("<stdin>", std::cin);
   while (1)
     {
-      socc::ExprPtr expr = ctx.next_expr ();
-      if (expr == nullptr)
+      socc::StatementPtr st = ctx.next_statement ();
+      if (st == nullptr)
 	break;
-      std::cout << expr->location () << ": " << *expr << std::endl;
+      std::cout << st->location () << ": " << *st << std::endl;
     }
   return 0;
 }

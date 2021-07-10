@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include "token.hh"
+#include "type.hh"
 
 namespace socc
 {
@@ -80,9 +81,17 @@ namespace socc
 
   class ExprAST : public AST
   {
+  public:
+    virtual bool is_lvalue (void) = 0;
   };
 
   typedef std::unique_ptr <ExprAST> ExprPtr;
+
+  class StatementAST : public AST
+  {
+  };
+
+  typedef std::unique_ptr <StatementAST> StatementPtr;
 
   class StringAST : public ExprAST
   {
@@ -93,6 +102,7 @@ namespace socc
     StringAST (Location loc, std::string str) : loc (loc), str (str) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return false; }
   };
 
   class IntegerAST : public ExprAST
@@ -106,6 +116,7 @@ namespace socc
       loc (loc), value (value), width (width) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return false; }
   };
 
   class CallAST : public ExprAST
@@ -119,6 +130,7 @@ namespace socc
       loc (loc), func (std::move (func)), params (std::move (params)) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return false; }
   };
 
   class ArrayIndexAST : public ExprAST
@@ -132,6 +144,7 @@ namespace socc
       loc (loc), array (std::move (array)), index (std::move (index)) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return true; }
   };
 
   class MemberAccessAST : public ExprAST
@@ -148,6 +161,7 @@ namespace socc
       deref (deref) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return true; }
   };
 
   class VariableAST : public ExprAST
@@ -159,6 +173,7 @@ namespace socc
     VariableAST (Location loc, std::string name) : loc (loc), name (name) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return true; }
   };
 
   class UnaryAST : public ExprAST
@@ -172,6 +187,7 @@ namespace socc
       loc (loc), op (op), operand (std::move (operand)) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
+    bool is_lvalue (void) { return op == UnaryOperator::Dereference; }
   };
 
   class BinaryAST : public ExprAST
@@ -184,6 +200,45 @@ namespace socc
 
     BinaryAST (Location loc, BinaryOperator op, ExprPtr lhs, ExprPtr rhs) :
       loc (loc), op (op), lhs (std::move (lhs)), rhs (std::move (rhs)) {}
+    Location &location (void) { return loc; }
+    void print (std::ostream &os) const;
+    bool is_lvalue (void) { return false; }
+  };
+
+  class ExprStmtAST : public StatementAST
+  {
+  public:
+    Location loc;
+    ExprPtr expr;
+
+    ExprStmtAST (Location loc, ExprPtr expr) :
+      loc (loc), expr (std::move (expr)) {}
+    Location &location (void) { return loc; }
+    void print (std::ostream &os) const;
+  };
+
+  class ReturnAST : public StatementAST
+  {
+  public:
+    Location loc;
+    ExprPtr value;
+
+    ReturnAST (Location loc, ExprPtr value) :
+      loc (loc), value (std::move (value)) {}
+    Location &location (void) { return loc; }
+    void print (std::ostream &os) const;
+  };
+
+  class VariableDeclarationAST : public StatementAST
+  {
+  public:
+    Location loc;
+    TypePtr type;
+    std::string name;
+    ExprPtr initval;
+
+    VariableDeclarationAST (Location loc, TypePtr type, std::string name) :
+      loc (loc), type (std::move (type)), name (name) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
   };

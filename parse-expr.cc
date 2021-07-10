@@ -320,8 +320,8 @@ Context::parse_expr_binary (ExprPtr lhs, unsigned int minprec)
       if (token == nullptr)
 	return lhs;
       if (!expr_get_binary_op (token->type, op))
-	{
-	  error (token->loc, "operator is invalid in this context");
+        {
+	  token_stack.push (std::move (token));
 	  return lhs;
 	}
 

@@ -60,12 +60,13 @@ namespace socc
   {
     FileScope,
     FuncReturn,
+    FuncParam,
     Local,
     Cast
   };
 
   class Type;
-  typedef std::unique_ptr <Type> TypePtr;
+  typedef std::shared_ptr <Type> TypePtr;
 
   class Type
   {
@@ -81,6 +82,7 @@ namespace socc
     TypeContext ctx;
     bool is_const;
     bool is_volatile;
+    bool is_unsigned;
     PrimitiveType primitive;
     TypePtr pointer; /* For pointer, array, and function return types */
     unsigned long len; /* For array size */
@@ -88,7 +90,8 @@ namespace socc
 				     members */
     std::string struct_name;
 
-    Type (PrimitiveType type) : type (TypeType::Primitive), primitive (type) {}
+    Type (PrimitiveType type, bool is_unsigned) :
+      type (TypeType::Primitive), is_unsigned (is_unsigned), primitive (type) {}
     Type (TypePtr type) :
       type (TypeType::Pointer), pointer (std::move (type)) {}
     Type (TypePtr type, unsigned long len) :

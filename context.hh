@@ -39,12 +39,15 @@ namespace socc
     bool expr_get_binary_op (TokenType type, BinaryOperator &op);
     unsigned int expr_get_binary_prec (BinaryOperator op);
     void expr_call_build_params (std::vector <ExprPtr> &params);
+    StatementPtr stmt_handle_parse_error (void);
     ExprPtr parse_expr_atomic (void);
     ExprPtr parse_expr_basic (void);
     ExprPtr parse_expr_suffix (ExprPtr expr);
     ExprPtr parse_expr_member_access (ExprPtr expr, bool deref);
     ExprPtr parse_expr_array_index (ExprPtr expr);
     ExprPtr parse_expr_binary (ExprPtr lhs, unsigned int minprec);
+    StatementPtr parse_stmt_return_expr (Location loc, bool ret);
+    StatementPtr parse_stmt_variable_declaration (Location loc, TypePtr type);
 
   public:
     Location currloc;
@@ -57,6 +60,8 @@ namespace socc
     void error (Location loc, std::string msg);
     TokenPtr next_token (void);
     ExprPtr next_expr (void);
+    StatementPtr next_statement (void);
+    TypePtr parse_type (Location loc, TypeContext tctx);
   };
 
   void init_console (void);
