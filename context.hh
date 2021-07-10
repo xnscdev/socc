@@ -28,6 +28,7 @@ namespace socc
     std::stack <char> char_stack;
     std::stack <TokenPtr> token_stack;
     unsigned int errors;
+    unsigned int indent;
 
     char next_char (void);
     bool next_char_escaped (char &c);
@@ -47,20 +48,24 @@ namespace socc
     ExprPtr parse_expr_array_index (ExprPtr expr);
     ExprPtr parse_expr_binary (ExprPtr lhs, unsigned int minprec);
     StatementPtr parse_stmt_return_expr (Location loc, bool ret);
+    std::unique_ptr <BlockAST> parse_stmt_block (Location loc);
     StatementPtr parse_stmt_variable_declaration (Location loc, TypePtr type);
+    FileScopeDeclPtr parse_decl_func (Location loc, TypePtr type,
+				      std::string name);
 
   public:
     Location currloc;
     std::istream &stream;
 
     Context (std::string name, std::istream &stream) :
-      currloc (name), stream (stream) {}
+      indent (0), currloc (name), stream (stream) {}
     std::string bold (std::string str);
     void warning (Location loc, std::string msg, std::string option = "");
     void error (Location loc, std::string msg);
     TokenPtr next_token (void);
     ExprPtr next_expr (void);
     StatementPtr next_statement (void);
+    FileScopeDeclPtr next_decl (void);
     TypePtr parse_type (Location loc, TypeContext tctx);
   };
 

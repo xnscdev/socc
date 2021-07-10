@@ -88,6 +88,7 @@ namespace socc
     unsigned long len; /* For array size */
     std::vector <TypePtr> params; /* For function params and anonymous struct 
 				     members */
+    bool empty_params;
     std::string struct_name;
 
     Type (PrimitiveType type, bool is_unsigned) :

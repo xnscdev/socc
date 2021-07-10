@@ -23,6 +23,7 @@ socc_src = [
   'diagnostics.cc',
   'lex.cc',
   'main.cc',
+  'parse-decl.cc',
   'parse-expr.cc',
   'parse-statement.cc',
   'type.cc'

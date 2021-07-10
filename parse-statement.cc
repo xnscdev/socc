@@ -63,6 +63,33 @@ Context::parse_stmt_return_expr (Location loc, bool ret)
   return st;
 }
 
+std::unique_ptr <BlockAST>
+Context::parse_stmt_block (Location loc)
+{
+  indent++;
+  std::vector <StatementPtr> body;
+  while (1)
+    {
+      TokenPtr token = next_token ();
+      if (token == nullptr)
+	{
+	  error (currloc, "unexpected end of input, expected " + bold ("}"));
+	  return std::make_unique <BlockAST> (loc, std::move (body), --indent);
+	}
+      else if (token->type == TokenType::RightBrace)
+	return std::make_unique <BlockAST> (loc, std::move (body), --indent);
+
+      token_stack.push (std::move (token));
+      StatementPtr st = next_statement ();
+      if (st == nullptr)
+	{
+	  error (currloc, "unexpected end of input, expected statement");
+	  return std::make_unique <BlockAST> (loc, std::move (body), --indent);
+	}
+      body.push_back (std::move (st));
+    }
+}
+
 StatementPtr
 Context::parse_stmt_variable_declaration (Location loc, TypePtr type)
 {
@@ -119,16 +146,21 @@ Context::next_statement (void)
       if (token == nullptr)
 	return nullptr;
       Location loc = token->loc;
-      if (token->type == TokenType::KeywordReturn)
-	return parse_stmt_return_expr (loc, true);
-      else if (token->type == TokenType::Semicolon)
-	continue;
-      else
-	token_stack.push (std::move (token));
-      TypePtr type = parse_type (loc, TypeContext::Local);
-      if (type != nullptr)
-	return parse_stmt_variable_declaration (loc, type);
-      return parse_stmt_return_expr (loc, false);
+      switch (token->type)
+	{
+	case TokenType::KeywordReturn:
+	  return parse_stmt_return_expr (loc, true);
+	case TokenType::LeftBrace:
+	  return parse_stmt_block (loc);
+	case TokenType::Semicolon:
+	  break;
+	default:
+	  token_stack.push (std::move (token));
+	  TypePtr type = parse_type (loc, TypeContext::Local);
+	  if (type != nullptr)
+	    return parse_stmt_variable_declaration (loc, type);
+	  return parse_stmt_return_expr (loc, false);
+	}
     }
 }
 
@@ -148,14 +180,69 @@ ReturnAST::print (std::ostream &os) const
 }
 
 void
+BlockAST::print (std::ostream &os) const
+{
+  os << "{\n";
+  for (const StatementPtr &st : body)
+    os << std::string ((indent + 1) * 2, ' ') << *st << '\n';
+  os << std::string (indent * 2, ' ') << '}';
+}
+
+void
 VariableDeclarationAST::print (std::ostream &os) const
 {
-  std::string type_name = type->name ();
-  os << type_name;
-  if (type_name.back () != '*')
+  std::string text = type->name ();
+  os << text;
+  if (text.back () != '*')
     os << ' ';
   os << name;
   if (initval)
     os << " = " << *initval;
   os << ';';
+}
+
+void
+FuncDeclarationAST::print (std::ostream &os) const
+{
+  std::string text = rettype->name ();
+  os << text;
+  if (text.back () != '*')
+    os << ' ';
+  os << name << " (";
+  if (params.empty ())
+    os << "void";
+  else
+    {
+      os << params[0]->name ();
+      for (size_t i = 1; i < params.size (); i++)
+	os << ", " << params[i]->name ();
+    }
+  os << ");";
+}
+
+void
+FuncDefinitionAST::print (std::ostream &os) const
+{
+  std::string text = rettype->name ();
+  os << text << '\n' << name << " (";
+  if (params.empty ())
+    os << "void";
+  else
+    {
+      std::string text = params[0].first->name ();
+      os << text;
+      if (text.back () != '*')
+	os << ' ';
+      os << params[0].second;
+      for (size_t i = 1; i < params.size (); i++)
+	{
+	  os << ", ";
+	  text = params[i].first->name ();
+	  os << text;
+	  if (text.back () != '*')
+	    os << ' ';
+	  os << params[i].second;
+	}
+    }
+  os << ")\n" << *body;
 }

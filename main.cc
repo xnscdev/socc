@@ -24,10 +24,10 @@ main (int argc, char **argv)
   socc::Context ctx ("<stdin>", std::cin);
   while (1)
     {
-      socc::StatementPtr st = ctx.next_statement ();
-      if (st == nullptr)
+      socc::FileScopeDeclPtr decl = ctx.next_decl ();
+      if (decl == nullptr)
 	break;
-      std::cout << st->location () << ": " << *st << std::endl;
+      std::cout << decl->location () << ": " << *decl << std::endl;
     }
   return 0;
 }

@@ -93,6 +93,12 @@ namespace socc
 
   typedef std::unique_ptr <StatementAST> StatementPtr;
 
+  class FileScopeDeclAST : public AST
+  {
+  };
+
+  typedef std::unique_ptr <FileScopeDeclAST> FileScopeDeclPtr;
+
   class StringAST : public ExprAST
   {
   public:
@@ -229,7 +235,21 @@ namespace socc
     void print (std::ostream &os) const;
   };
 
-  class VariableDeclarationAST : public StatementAST
+  class BlockAST : public StatementAST
+  {
+  public:
+    Location loc;
+    std::vector <StatementPtr> body;
+    unsigned int indent;
+
+    BlockAST (Location loc, std::vector <StatementPtr> body,
+	      unsigned int indent) :
+      loc (loc), body (std::move (body)), indent (indent) {}
+    Location &location (void) { return loc; }
+    void print (std::ostream &os) const;
+  };
+
+  class VariableDeclarationAST : public StatementAST, public FileScopeDeclAST
   {
   public:
     Location loc;
@@ -239,6 +259,43 @@ namespace socc
 
     VariableDeclarationAST (Location loc, TypePtr type, std::string name) :
       loc (loc), type (std::move (type)), name (name) {}
+    Location &location (void) { return loc; }
+    void print (std::ostream &os) const;
+  };
+
+  class FuncDeclarationAST : public FileScopeDeclAST
+  {
+  public:
+    Location loc;
+    TypePtr rettype;
+    std::string name;
+    std::vector <TypePtr> params;
+    bool empty_params;
+
+    FuncDeclarationAST (Location loc, TypePtr rettype, std::string name,
+			std::vector <TypePtr> params, bool empty_params) :
+      loc (loc), rettype (std::move (rettype)), name (name),
+      params (std::move (params)), empty_params (empty_params) {}
+    Location &location (void) { return loc; }
+    void print (std::ostream &os) const;
+  };
+
+  class FuncDefinitionAST : public FileScopeDeclAST
+  {
+  public:
+    Location loc;
+    TypePtr rettype;
+    std::string name;
+    std::vector <std::pair <TypePtr, std::string>> params;
+    bool empty_params;
+    std::unique_ptr <BlockAST> body;
+
+    FuncDefinitionAST (Location loc, TypePtr rettype, std::string name,
+		       std::vector <std::pair <TypePtr, std::string>> params,
+		       bool empty_params, std::unique_ptr <BlockAST> body) :
+      loc (loc), rettype (std::move (rettype)), name (name),
+      params (std::move (params)), empty_params (empty_params),
+      body (std::move (body)) {}
     Location &location (void) { return loc; }
     void print (std::ostream &os) const;
   };

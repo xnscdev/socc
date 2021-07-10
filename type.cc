@@ -141,12 +141,19 @@ Context::parse_type (Location loc, TypeContext ctx)
 	    error (token->loc, "multiple base types specified");
 	  break;
 	case TokenType::KeywordVoid:
-	  if (primitive == -1 || primtype != PrimitiveType::Unspecified)
+	  if (type || primitive != 0 || primtype != PrimitiveType::Unspecified)
 	    error (token->loc, "expected type modifier or identifier");
 	  else
 	    {
-	      primtype = PrimitiveType::Void;
-	      finish = true;
+	      primitive = -1;
+	      if (sign != 0)
+		error (token->loc, bold ("void") + "specifier with " +
+		       bold (sign == 1 ? "unsigned" : "signed"));
+	      type = std::make_shared <Type> (PrimitiveType::Void, false);
+	      type->is_const = is_const;
+	      type->is_volatile = is_volatile;
+	      is_const = false;
+	      is_volatile = false;
 	    }
 	  break;
 	case TokenType::KeywordAuto:
@@ -188,9 +195,9 @@ Context::parse_type (Location loc, TypeContext ctx)
 	case TokenType::Mul:
 	  if (primitive == 1)
 	    type = std::make_shared <Type> (primtype, sign == 1);
+	  primitive = -1;
 	  type->is_const = is_const;
 	  type->is_volatile = is_volatile;
-	  primitive = -1;
 	  is_const = false;
 	  is_volatile = false;
 	  type = std::make_shared <Type> (std::move (type));
